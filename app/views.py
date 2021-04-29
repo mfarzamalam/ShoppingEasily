@@ -11,9 +11,6 @@ class HomeView(View):
         
         return render(request, 'app/home.html', context)
 
-# def home(request):
-#     return render(request, 'app/home.html')
-
 class product_detail(View):
     def get(self, request, pk):
         product = Product.objects.get(pk=pk)
@@ -39,8 +36,22 @@ def orders(request):
 def change_password(request):
  return render(request, 'app/changepassword.html')
 
-def mobile(request):
- return render(request, 'app/mobile.html')
+
+class mobile(View):
+    def get(self, request, brand=''):
+        if brand == 'samsung' or brand == 'iphone':
+            mobile = Product.objects.filter(category='M').filter(brand__iexact=brand)
+        elif brand == 'below-10000':
+            mobile = Product.objects.filter(category='M').filter(discount_price__lte=10000)
+        elif brand == 'above-10000':
+            mobile = Product.objects.filter(category='M').filter(discount_price__gte=10000)
+        else:
+            mobile = Product.objects.filter(category='M')
+
+        context = {'mobile':mobile}
+
+        return render(request, 'app/mobile.html', context)
+
 
 def login(request):
  return render(request, 'app/login.html')
