@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.views import View
 from .models import Customer, Product, Cart, OrderPlaced
+from .forms import UserRegistrationForm
+from django.contrib import messages
 
 class HomeView(View):
     def get(self, request):
@@ -53,11 +55,23 @@ class mobile(View):
         return render(request, 'app/mobile.html', context)
 
 
-def login(request):
- return render(request, 'app/login.html')
+class customerregistration(View):
+    def get(self, request):
+        forms = UserRegistrationForm()
+        context = {'forms':forms}
 
-def customerregistration(request):
- return render(request, 'app/customerregistration.html')
+        return render(request, 'app/customerregistration.html', context)
+
+    def post(self, request):
+        forms = UserRegistrationForm(request.POST)
+        if forms.is_valid():
+            forms.save()
+            messages.info(request, "Successfully Registerd!")
+            forms = UserRegistrationForm()
+
+        context = {'forms':forms}
+        return render(request, 'app/customerregistration.html', context)
+
 
 def checkout(request):
  return render(request, 'app/checkout.html')
