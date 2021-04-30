@@ -1,7 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, HttpResponseRedirect
 from django.views import View
 from .models import Customer, Product, Cart, OrderPlaced
-from .forms import UserRegistrationForm
+from .forms import UserRegistrationForm, UserProfileForm
 from django.contrib import messages
 
 class HomeView(View):
@@ -26,11 +26,68 @@ def add_to_cart(request):
 def buy_now(request):
  return render(request, 'app/buynow.html')
 
-def profile(request):
- return render(request, 'app/profile.html')
 
-def address(request):
- return render(request, 'app/address.html')
+class profile(View):
+    def get(self, request, pk=''):
+        if pk == '':
+            form = UserProfileForm()
+            address = Customer.objects.filter(user=self.request.user)
+            count = address.count()
+            button = "Submit"
+            context = {'form':form, 'button':button, 'count':count}
+    
+        else:
+            single_data = Customer.objects.get(pk=pk)
+            form = UserProfileForm(instance=single_data)
+            button = "Update"
+            context = {'form':form, 'button':button}
+
+        return render(request, 'app/profile.html', context)
+
+    def post(self, request, pk=''):
+        if pk == "":
+            form = UserProfileForm(request.POST)
+            if form.is_valid():
+                user = request.user
+                name = form.cleaned_data['name']
+                locality = form.cleaned_data['locality']
+                city = form.cleaned_data['city']
+                zipcode = form.cleaned_data['zipcode']
+                state = form.cleaned_data['state']
+
+                update = Customer(user=user, name=name, locality=locality, city=city, zipcode=zipcode, state=state)
+                update.save()
+        
+                messages.info(request, 'Successfully Added!')
+                form = UserProfileForm()
+                button = "Submit"
+
+        else:
+            single_data = Customer.objects.get(pk=pk)
+            form = UserProfileForm(request.POST, instance=single_data)
+            if form.is_valid():
+                form.save()
+                messages.info(request, 'Successfully Updated!')
+                button = "Update"
+
+        context = {'form':form, 'button':button}
+
+        return render(request, 'app/profile.html', context)
+
+
+class address(View):
+    def get(self, request):
+        address = Customer.objects.filter(user=self.request.user)
+        context = {'address':address}
+
+        return render(request, 'app/address.html', context)
+
+def address_delete(request, pk):
+    address = Customer.objects.get(pk=pk)
+    address.delete()
+
+    return HttpResponseRedirect('/address/')
+
 
 def orders(request):
  return render(request, 'app/orders.html')

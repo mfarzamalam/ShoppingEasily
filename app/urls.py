@@ -24,11 +24,14 @@ urlpatterns = [
     path('password_reset_done/', auth_views.PasswordResetDoneView.as_view(template_name='app/password_reset_done.html'), name='password_reset_done'),
     path('password_reset_confirm/<uidb64>/<token>', auth_views.PasswordResetConfirmView.as_view(template_name='app/password_reset_confirm.html', form_class=UserSetPasswordForm), name='password_reset_confirm'),
     path('password_reset_complete/', auth_views.PasswordResetCompleteView.as_view(template_name='app/password_reset_complete.html'), name='password_reset_complete'),
-    
+
+    path('profile/', views.profile.as_view(), name='profile'),
+    path('profile/<int:pk>', views.profile.as_view(), name='profile-edit'),
+    path('address/', views.address.as_view(), name='address'),
+    path('address/<int:pk>', views.address_delete, name='address-delete'),
+
     path('cart/', views.add_to_cart, name='add-to-cart'),
     path('buy/', views.buy_now, name='buy-now'),
-    path('profile/', views.profile, name='profile'),
-    path('address/', views.address, name='address'),
     path('orders/', views.orders, name='orders'),
     path('checkout/', views.checkout, name='checkout'),
 ]   + static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
