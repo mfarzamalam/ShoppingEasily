@@ -1,4 +1,4 @@
-from django.shortcuts import render, HttpResponseRedirect
+from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.views import View
 from .models import Customer, Product, Cart, OrderPlaced
 from .forms import UserRegistrationForm, UserProfileForm
@@ -13,18 +13,26 @@ class HomeView(View):
         
         return render(request, 'app/home.html', context)
 
+
+
 class product_detail(View):
     def get(self, request, pk):
         product = Product.objects.get(pk=pk)
-        context = {'p':product}
+        user = request.user
+        Carts = Cart.objects.filter(user=user)
+        button = "add"
+
+        for cart in Carts:
+            if pk == cart.product.id:
+                button = "already"
+                break
+            else:
+                button = "add"
+
+        context = {'p':product, 'button':button}
 
         return render(request, 'app/productdetail.html', context)
 
-def add_to_cart(request):
- return render(request, 'app/addtocart.html')
-
-def buy_now(request):
- return render(request, 'app/buynow.html')
 
 
 class profile(View):
@@ -75,6 +83,7 @@ class profile(View):
         return render(request, 'app/profile.html', context)
 
 
+
 class address(View):
     def get(self, request):
         address = Customer.objects.filter(user=self.request.user)
@@ -89,8 +98,6 @@ def address_delete(request, pk):
     return HttpResponseRedirect('/address/')
 
 
-def orders(request):
- return render(request, 'app/orders.html')
 
 
 class mobile(View):
@@ -107,6 +114,7 @@ class mobile(View):
         context = {'mobile':mobile}
 
         return render(request, 'app/mobile.html', context)
+
 
 
 class customerregistration(View):
@@ -126,6 +134,75 @@ class customerregistration(View):
         context = {'forms':forms}
         return render(request, 'app/customerregistration.html', context)
 
+
+
+def add_to_cart(request):
+    user = request.user
+    p_id = request.GET.get('p_id')
+    all_user_cart = Cart.objects.filter(user=user)
+
+    product = Product.objects.get(id=p_id)
+    Cart(user=user, product=product).save()
+
+    return redirect('/show-cart')
+
+def show_cart(request):
+    amount = 0.0
+    shipping_amount = 150.0
+    total_amount = 0.0
+    total_amount_before = 0.0
+    total_amount_after = 0.0
+
+    if request.user.is_authenticated:
+        user = request.user
+        carts = Cart.objects.filter(user=user)
+
+        for cart_amount in carts:
+            amount = cart_amount.product.discount_price * cart_amount.quantity
+
+            total_amount += amount
+
+        total_amount_before = total_amount
+        total_amount_after = total_amount_before + shipping_amount
+        
+    context = {'carts':carts, 'before':total_amount_before, 'after':total_amount_after, 'shipping':shipping_amount}
+
+    return render(request, 'app/addtocart.html', context)
+
+def plus_cart(request, pk):
+    carts = Cart.objects.filter(pk=pk).filter(user=request.user)
+
+    for cart in carts:
+        quantity = cart.quantity + 1
+    
+    carts = Cart.objects.filter(pk=pk).update(quantity=quantity)
+
+    return redirect('/show-cart')
+
+def minus_cart(request, pk):
+    carts = Cart.objects.filter(pk=pk).filter(user=request.user)
+
+    for cart in carts:
+        if cart.quantity > 1:
+            quantity = cart.quantity - 1
+        else:
+            return redirect('/show-cart')
+    
+    carts = Cart.objects.filter(pk=pk).update(quantity=quantity)
+
+    return redirect('/show-cart')
+
+def remove_cart(request, pk):
+    carts = Cart.objects.filter(pk=pk).filter(user=request.user)
+    carts.delete()
+
+    return redirect('/show-cart')
+
+def buy_now(request):
+ return render(request, 'app/buynow.html')
+
+def orders(request):
+ return render(request, 'app/orders.html')
 
 def checkout(request):
  return render(request, 'app/checkout.html')

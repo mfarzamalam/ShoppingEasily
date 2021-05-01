@@ -30,7 +30,12 @@ urlpatterns = [
     path('address/', views.address.as_view(), name='address'),
     path('address/<int:pk>', views.address_delete, name='address-delete'),
 
-    path('cart/', views.add_to_cart, name='add-to-cart'),
+    path('add-to-cart/', views.add_to_cart, name='add-to-cart'),
+    path('show-cart/', views.show_cart, name='show-cart'),
+    path('plus-cart/<int:pk>', views.plus_cart, name='plus-cart'),
+    path('minus-cart/<int:pk>', views.minus_cart, name='minus-cart'),
+    path('remove-cart/<int:pk>', views.remove_cart, name='remove-cart'),
+    
     path('buy/', views.buy_now, name='buy-now'),
     path('orders/', views.orders, name='orders'),
     path('checkout/', views.checkout, name='checkout'),
