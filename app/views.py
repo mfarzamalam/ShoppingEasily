@@ -21,16 +21,18 @@ class HomeView(View):
 class product_detail(View):
     def get(self, request, pk):
         product = Product.objects.get(pk=pk)
-        user = request.user
-        Carts = Cart.objects.filter(user=user)
         button = "add"
 
-        for cart in Carts:
-            if pk == cart.product.id:
-                button = "already"
-                break
-            else:
-                button = "add"
+        if request.user.is_authenticated:
+            user = request.user
+            Carts = Cart.objects.filter(user=user)
+
+            for cart in Carts:
+                if pk == cart.product.id:
+                    button = "already"
+                    break
+                else:
+                    button = "add"
 
         context = {'p':product, 'button':button}
 
