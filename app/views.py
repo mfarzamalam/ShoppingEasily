@@ -3,6 +3,9 @@ from django.views import View
 from .models import Customer, Product, Cart, OrderPlaced
 from .forms import UserRegistrationForm, UserProfileForm
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+
 
 class HomeView(View):
     def get(self, request):
@@ -34,7 +37,7 @@ class product_detail(View):
         return render(request, 'app/productdetail.html', context)
 
 
-
+@method_decorator(login_required, name='dispatch')
 class profile(View):
     def get(self, request, pk=''):
         if pk == '':
@@ -83,7 +86,7 @@ class profile(View):
         return render(request, 'app/profile.html', context)
 
 
-
+@method_decorator(login_required, name='dispatch')
 class address(View):
     def get(self, request):
         address = Customer.objects.filter(user=self.request.user)
@@ -91,6 +94,7 @@ class address(View):
 
         return render(request, 'app/address.html', context)
 
+@method_decorator(login_required, name='dispatch')
 def address_delete(request, pk):
     address = Customer.objects.get(pk=pk)
     address.delete()
@@ -135,7 +139,7 @@ class customerregistration(View):
         return render(request, 'app/customerregistration.html', context)
 
 
-
+@login_required
 def add_to_cart(request):
     user = request.user
     p_id = request.GET.get('p_id')
@@ -146,6 +150,7 @@ def add_to_cart(request):
 
     return redirect('/show-cart')
 
+@login_required
 def show_cart(request):
     amount = 0.0
     shipping_amount = 150.0
@@ -169,6 +174,7 @@ def show_cart(request):
 
     return render(request, 'app/addtocart.html', context)
 
+@login_required
 def plus_cart(request, pk):
     carts = Cart.objects.filter(pk=pk).filter(user=request.user)
 
@@ -179,6 +185,7 @@ def plus_cart(request, pk):
 
     return redirect('/show-cart')
 
+@login_required
 def minus_cart(request, pk):
     carts = Cart.objects.filter(pk=pk).filter(user=request.user)
 
@@ -192,17 +199,43 @@ def minus_cart(request, pk):
 
     return redirect('/show-cart')
 
+@login_required
 def remove_cart(request, pk):
     carts = Cart.objects.filter(pk=pk).filter(user=request.user)
     carts.delete()
 
     return redirect('/show-cart')
 
-def buy_now(request):
- return render(request, 'app/buynow.html')
 
-def orders(request):
- return render(request, 'app/orders.html')
 
+@login_required
 def checkout(request):
- return render(request, 'app/checkout.html')
+    user = request.user
+    address = Customer.objects.filter(user=user)
+    carts = Cart.objects.filter(user=user)
+
+    context = {'address':address, 'carts':carts}
+
+    return render(request, 'app/checkout.html', context)
+
+@login_required
+def buy_now(request):
+    user = request.user
+    customer_id = request.GET.get('customer_id')
+    customer = Customer.objects.get(id=customer_id)
+    carts = Cart.objects.filter(user=user)
+
+    for cart in carts:
+        OrderPlaced(user=user, customer=customer, product=cart.product, quantity=cart.quantity).save()
+        cart.delete()
+
+    return render(request, 'app/buynow.html')
+
+@login_required
+def orders(request):
+    user = request.user
+    orders = OrderPlaced.objects.filter(user=user)
+
+    context = {'orders':orders}
+
+    return render(request, 'app/orders.html', context)
