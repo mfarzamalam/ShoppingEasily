@@ -44,7 +44,7 @@ class profile(View):
     def get(self, request, pk=''):
         if pk == '':
             form = UserProfileForm()
-            address = Customer.objects.filter(user=self.request.user)
+            address = Customer.objects.filter(user=request.user)
             count = address.count()
             button = "Submit"
             context = {'form':form, 'button':button, 'count':count}
@@ -58,7 +58,8 @@ class profile(View):
         return render(request, 'app/profile.html', context)
 
     def post(self, request, pk=''):
-        if pk == "":
+        button = "Submit"
+        if pk == '':
             form = UserProfileForm(request.POST)
             if form.is_valid():
                 user = request.user
@@ -70,10 +71,8 @@ class profile(View):
 
                 update = Customer(user=user, name=name, locality=locality, city=city, zipcode=zipcode, state=state)
                 update.save()
-        
-                messages.info(request, 'Successfully Added!')
-                form = UserProfileForm()
-                button = "Submit"
+                
+                return HttpResponseRedirect('/address/')
 
         else:
             single_data = Customer.objects.get(pk=pk)
@@ -96,9 +95,9 @@ class address(View):
 
         return render(request, 'app/address.html', context)
 
-@method_decorator(login_required, name='dispatch')
+@login_required
 def address_delete(request, pk):
-    address = Customer.objects.get(pk=pk)
+    address = Customer.objects.filter(pk=pk)
     address.delete()
 
     return HttpResponseRedirect('/address/')
@@ -154,27 +153,31 @@ def add_to_cart(request):
 
 @login_required
 def show_cart(request):
-    amount = 0.0
-    shipping_amount = 150.0
-    total_amount = 0.0
-    total_amount_before = 0.0
-    total_amount_after = 0.0
+    user = request.user
+    carts = Cart.objects.filter(user=user)
+    
+    if carts.count() > 0:
+        amount = 0.0
+        shipping_amount = 150.0
+        total_amount = 0.0
+        total_amount_before = 0.0
+        total_amount_after = 0.0
 
-    if request.user.is_authenticated:
-        user = request.user
-        carts = Cart.objects.filter(user=user)
+        if request.user.is_authenticated:
+            for cart_amount in carts:
+                amount = cart_amount.product.discount_price * cart_amount.quantity
 
-        for cart_amount in carts:
-            amount = cart_amount.product.discount_price * cart_amount.quantity
+                total_amount += amount
 
-            total_amount += amount
+            total_amount_before = total_amount
+            total_amount_after = total_amount_before + shipping_amount
+            
+        context = {'carts':carts, 'before':total_amount_before, 'after':total_amount_after, 'shipping':shipping_amount}
 
-        total_amount_before = total_amount
-        total_amount_after = total_amount_before + shipping_amount
-        
-    context = {'carts':carts, 'before':total_amount_before, 'after':total_amount_after, 'shipping':shipping_amount}
+        return render(request, 'app/addtocart.html', context)
+    else:
+        return render(request, 'app/emptycart.html')
 
-    return render(request, 'app/addtocart.html', context)
 
 @login_required
 def plus_cart(request, pk):
@@ -213,12 +216,21 @@ def remove_cart(request, pk):
 @login_required
 def checkout(request):
     user = request.user
-    address = Customer.objects.filter(user=user)
     carts = Cart.objects.filter(user=user)
+    
+    if carts.count() > 0:
+        address = Customer.objects.filter(user=user)
 
-    context = {'address':address, 'carts':carts}
+        if address.count() > 0:
+            button = "already"
+        else:
+            button = "add"
 
-    return render(request, 'app/checkout.html', context)
+        context = {'address':address, 'carts':carts, 'button':button}
+
+        return render(request, 'app/checkout.html', context)
+    else:
+        return render(request, 'app/empty_checkout.html')
 
 @login_required
 def buy_now(request):

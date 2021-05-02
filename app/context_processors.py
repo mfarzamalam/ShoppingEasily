@@ -5,6 +5,6 @@ def cart_count(request):
         carts = Cart.objects.filter(user=request.user)
         count = carts.count()
     
-        return {'count':count}
+        return {'cart_count':count}
     else:
         return {'count':0}
